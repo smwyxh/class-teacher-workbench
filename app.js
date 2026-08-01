@@ -117,12 +117,13 @@ function switchTab(tab){
   document.getElementById('tab-'+tab).classList.add('active');
   document.querySelector(`.tab-item[data-tab="${tab}"]`).classList.add('active');
   renderTab(tab);
-  // FAB 控制
+  // FAB 控制：所有页面都显示加号
   const fab = document.getElementById('fab');
-  if(['students','communication','affairs','schedule'].includes(tab)){
-    fab.style.display = 'flex';
+  fab.style.display = 'flex';
+  if(tab==='dashboard'){
+    fab.onclick = function(){ showAddTodoModal(); };
   }else{
-    fab.style.display = 'none';
+    fab.onclick = onFabClick;
   }
 }
 
@@ -263,7 +264,7 @@ function showMyMathSchedule(){ switchTab('schedule'); setTimeout(()=>showMyMathS
 function renderStudents(){
   const c = getCurrentClass();
   return `
-    <div class="page-header"><h2>学情管理</h2><button class="btn-confirm" style="padding:6px 12px;font-size:13px;" onclick="showBatchImportStudents()">📥 批量导入</button></div>
+    <div class="page-header"><h2>学情管理</h2><button class="btn-confirm btn-small" style="padding:5px 10px;font-size:12px;border-radius:16px;white-space:nowrap;" onclick="showBatchImportStudents()">📥 批量导入</button></div>
     <div class="search-bar">
       <span>🔍</span>
       <input type="text" id="studentSearch" placeholder="搜索学生姓名..." oninput="filterStudents(this.value)">
