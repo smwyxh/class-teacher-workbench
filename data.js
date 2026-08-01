@@ -35,7 +35,7 @@ const PERIODS = [
 /* 默认数据工厂 */
 function getDefaultData(){
   return {
-    teacher:'王老师',
+    teacher:'小马老师',
     subject:'数学',
     currentClassId:'c9-3',
     classes:[
