@@ -263,7 +263,7 @@ function showMyMathSchedule(){ switchTab('schedule'); setTimeout(()=>showMyMathS
 function renderStudents(){
   const c = getCurrentClass();
   return `
-    <div class="page-header"><h2>学情管理</h2></div>
+    <div class="page-header"><h2>学情管理</h2><button class="btn-confirm" style="padding:6px 12px;font-size:13px;" onclick="showBatchImportStudents()">📥 批量导入</button></div>
     <div class="search-bar">
       <span>🔍</span>
       <input type="text" id="studentSearch" placeholder="搜索学生姓名..." oninput="filterStudents(this.value)">
@@ -476,6 +476,85 @@ function confirmDeleteStudent(id){
   renderTab('students');
   renderTab('dashboard');
   showToast('已删除');
+}
+
+/* 批量导入学生 */
+function showBatchImportStudents(){
+  showModal(`
+    <h3>📥 批量导入学生</h3>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">支持从 Excel/WPS 复制后粘贴，或上传 TXT/CSV 文件。格式：姓名 性别 成绩（空格、逗号或制表符分隔均可），每行一个学生。</p>
+    <div class="upload-area" onclick="document.getElementById('stuFile').click()">
+      <div class="upload-icon svg-icon">${icon('file')}</div>
+      <div>点击选择学生名单文件</div>
+      <div style="font-size:11px;margin-top:4px;">支持 TXT/CSV</div>
+      <input type="file" id="stuFile" accept=".txt,.csv,text/*" onchange="handleBatchStudentFile(event)">
+    </div>
+    <div class="modal-label">或直接粘贴名单：</div>
+    <textarea class="modal-textarea" id="batchStudentText" placeholder="张明 男 92&#10;李华 女 85&#10;王强 男 78" style="min-height:120px;"></textarea>
+    <div style="font-size:12px;color:var(--text-light);margin:10px 0;">
+      <b>支持格式示例：</b><br>
+      张明 男 92 正常 良<br>
+      李华 女 85 正常 良<br>
+      王强 男 78 迟到1次 中
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-confirm" onclick="parseBatchStudents()">导入</button>
+    </div>
+  `);
+}
+
+function handleBatchStudentFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    document.getElementById('batchStudentText').value = ev.target.result;
+    showToast('文件已载入，点导入');
+  };
+  reader.readAsText(file);
+}
+
+function parseBatchStudents(){
+  const text = document.getElementById('batchStudentText').value.trim();
+  if(!text){showToast('请输入或上传学生名单');return;}
+  const c = getCurrentClass();
+  const lines = text.split(/\n/).map(l=>l.trim()).filter(l=>l);
+  let added = 0;
+  lines.forEach(line=>{
+    // 支持 姓名 性别 成绩 考勤 表现 备注
+    const parts = line.split(/[,，\s、\t]+/).map(s=>s.trim()).filter(s=>s);
+    if(!parts.length) return;
+    const name = parts[0];
+    if(!name) return;
+    const gender = (parts[1]==='女' || parts[1]==='2' || parts[1]==='F')?'女':'男';
+    const score = parseInt(parts[2]) || 0;
+    let attendance = '正常';
+    let performance = '良';
+    let note = '';
+    if(parts[3]){
+      const p3 = parts[3];
+      if(['优','良','中','差'].includes(p3)) performance = p3;
+      else attendance = p3;
+    }
+    if(parts[4]){
+      const p4 = parts[4];
+      if(['优','良','中','差'].includes(p4)) performance = p4;
+      else if(attendance==='正常') attendance = p4;
+    }
+    if(parts[5]){
+      note = parts.slice(5).join(' ');
+    }
+    c.students.push({
+      id:genId('s'),name,gender,score,attendance,performance,note
+    });
+    added++;
+  });
+  saveData();
+  closeModal();
+  renderTab('students');
+  renderTab('dashboard');
+  showToast(`成功导入 ${added} 名学生`);
 }
 
 /* ========================================================
